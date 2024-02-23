@@ -1,14 +1,30 @@
-AWSTemplateFormatVersion: '2010-09-09'
-Description: 'CloudFormation template for creating an S3 bucket'
-
 Resources:
-  MyS3Bucket:
-    Type: 'AWS::S3::Bucket'
+  GlueJob:
+    Type: AWS::Glue::Job
     Properties:
-      BucketName: 'mybucket13001'  # Replace with your desired unique bucket name
-      
+      Name: MyGlueJob  
+      Role: !GetAtt GlueServiceRole.Arn
+      Command:
+        Name: glueetl
+        ScriptLocation: s3://myroleforcodepipeline/script/glue_script.py
+      DefaultArguments:
+        "--TempDir": "s3://myroleforcodepipeline/temp/"
+      GlueVersion: "2.0"
+      WorkerType: G.1X
+      NumberOfWorkers: 3
 
-Outputs:
-  BucketName:
-    Description: 'The name of the created S3 bucket'
-    Value: !Ref MyS3Bucket
+
+  GlueServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub "${AWS::StackName}-MyRoleForGlue"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: glue.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
+        - arn:aws:iam::aws:policy/service-role/AWSGlueServiceRole
